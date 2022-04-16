@@ -2,7 +2,9 @@ import sympy as sp
 import numpy as np
 import matplotlib.pyplot as plt
 import scipy.interpolate as spline
+import scipy.stats as stats
 from pprint import pprint
+import math
 
 #data refinement
 class Dataset:
@@ -90,10 +92,10 @@ for trial in expr2:
         sD_EC += (avr_EC - data.EC)**2
         sD_Brix += (avr_Brix - data.Brix)**2
     
-    sD_vapoConc = sD_vapoConc**(1/2)
-    sD_TDS = sD_TDS**(1/2)
-    sD_EC = sD_EC**(1/2)
-    sD_Brix = sD_Brix**(1/2)
+    sD_vapoConc = math.sqrt(sD_vapoConc)
+    sD_TDS = math.sqrt(sD_TDS)
+    sD_EC = math.sqrt(sD_EC)
+    sD_Brix = math.sqrt(sD_Brix)
     expr2_SD.append([(sD_vapoConc,avr_vapoConc),
                     (sD_TDS,avr_TDS),
                     (sD_EC,avr_EC),
@@ -239,6 +241,7 @@ expr1_distributy_y = np.array(expr1_distributy_y)
 expr2_distributy_x = np.array(expr2_distributy_x)
 expr2_distributy_y = np.array(expr2_distributy_y)
 
+'''
 plt.subplot(2,1,1)
 plt.scatter(expr1_distributy_x,expr1_distributy_y)
 
@@ -246,8 +249,73 @@ plt.subplot(2,1,2)
 plt.scatter(expr2_distributy_x,expr2_distributy_y)
 
 plt.show()
+'''
 
 #relation constant calculation
+expr1_xySum = 0
+expr1_xxSum = 0
+expr1_yySum = 0
+expr1_xSum = 0
+expr1_ySum = 0
+
+for index, vec in enumerate(list(zip(expr1_distributy_x, expr1_distributy_y))):
+    x = vec[0]
+    y = vec[1]
+    expr1_xySum += x*y
+    expr1_xxSum += x*x
+    expr1_yySum += y*y
+    expr1_xSum += x
+    expr1_ySum += y
+
+expr1_len = len(expr1_distributy_x)
+
+expr1_Sxy = expr1_xySum - ( (expr1_xSum*expr1_ySum) / (expr1_len) )
+expr1_Sxx = expr1_xxSum - ( (expr1_xSum)**2 / (expr1_len) )
+expr1_Syy = expr1_yySum - ( (expr1_ySum)**2 / (expr1_len) )
+
+expr1_R = expr1_Sxy / math.sqrt(expr1_Sxx*expr1_Syy)
+
+expr2_xySum = 0
+expr2_xxSum = 0
+expr2_yySum = 0
+expr2_xSum = 0
+expr2_ySum = 0
+
+for index, vec in enumerate(list(zip(expr2_distributy_x, expr2_distributy_y))):
+    x = vec[0]
+    y = vec[1]
+    expr2_xySum += x*y
+    expr2_xxSum += x*x
+    expr2_yySum += y*y
+    expr2_xSum += x
+    expr2_ySum += y
+
+expr2_len = len(expr2_distributy_x)
+
+expr2_Sxy = expr2_xySum - ( (expr2_xSum*expr2_ySum) / (expr2_len) )
+expr2_Sxx = expr2_xxSum - ( (expr2_xSum)**2 / (expr2_len) )
+expr2_Syy = expr2_yySum - ( (expr2_ySum)**2 / (expr2_len) )
+
+expr2_R = expr2_Sxy / math.sqrt(expr2_Sxx*expr2_Syy)
+
+print("expr1 relation const. = ", expr1_R)
+print("expr2 relation const. = ", expr2_R)
+
+#test statistic calc.
+alpha = 0.5
+
+expr1_statistic = expr1_R / math.sqrt( (1-(expr1_R)**2) / (expr1_len - 2) )
+expr1_tFunc = stats.t(df = expr1_len-2).ppf
+expr1_boundary = expr1_tFunc(1-alpha/2)
+print("\nexpr1:")
+print("boundary : +-",expr1_boundary, "\nstatistic =", expr1_statistic, "\n null hypothesis is :", not(expr1_boundary<expr1_statistic))
+
+expr2_statistic = expr2_R / math.sqrt( (2-(expr2_R)**2) / (expr2_len - 2) )
+expr2_tFunc = stats.t(df = expr2_len-2).ppf
+expr2_boundary = expr2_tFunc(1-alpha/2)
+print("\nexpr2:")
+print("boundary : +-",expr2_boundary, "\nstatistic =", expr2_statistic, "\n null hypothesis is :", not(expr2_boundary<expr2_statistic))
+
 
 
 
